@@ -1,0 +1,230 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+canvas,textarea {
+    display:block;
+}
+        </style>
+    </head>
+    <body>
+        <canvas id="canvas" width="320" height="240"></canvas>
+        <button id="yet">it was safe</button>
+        <button id="horror">survival horror</button>
+        <button id="evil">good things</button>
+        <textarea cols="40" rows="4" id="textarea"></textarea>
+        <button id="playBtn" disabled>Play</button>
+        <button id="downloadBtn" disabled>Download</button>
+        <script>
+function breakup(s) {
+    const maxLength = 20;
+    const lines = [];
+    const words = s.split(' ');
+    let line = words[0];
+    for (const word of words.slice(1)) {
+        const appended = line + ' ' + word;
+        if (maxLength < appended.length) {
+            lines.push(line);
+            line = word;
+        } else {
+            line = appended;
+        }
+    }
+    lines.push(line);
+    return lines.join('\n');
+}
+
+function print(layout, s) {
+    const font = layout.font;
+    const ctx = layout.ctx;
+    for (const char of s) {
+        if (char === '\n') {
+            layout.x = layout.indent;
+            layout.y += font.height;
+        } else {
+            const coord = font.coords[char] ?? font.unknown;
+            ctx.drawImage(font.image, coord.x, coord.y, font.width, font.height, layout.x, layout.y, font.width, font.height);
+            layout.x += font.width;
+        }
+    }
+}
+
+function main(state) {
+    const charsPerSecond = 16;
+    const delaySeconds = 1.75;
+    function animate(timestamp) {
+        const screens = state.screens;
+        const secondsElapsed = (timestamp - state.zero) / 1000.0;
+        let screenSecondsElapsed = secondsElapsed;
+        let text = "";
+        if (delaySeconds < secondsElapsed && 0 < screens.length) {
+            screenSecondsElapsed -= delaySeconds;
+            let screenIndex;
+            let screenDuration;
+            for (screenIndex = 0; screenIndex < screens.length - 1; ++screenIndex) {
+                screenDuration = delaySeconds + screens[screenIndex].length / charsPerSecond;
+                if (screenSecondsElapsed < screenDuration) {
+                    break;
+                }
+                screenSecondsElapsed -= screenDuration;
+            }
+            text = screens[screenIndex];
+            if (state.onfinished && screenDuration < screenSecondsElapsed) {
+                state.onfinished();
+            }
+        }
+        state.ctx.fillStyle = 'black';
+        state.ctx.fillRect(0, 0, canvas.width, canvas.height);
+        const layout = {ctx: state.ctx, font: state.font, x: 32, y: 182, indent: 32};
+        const charsToShow = Math.min(charsPerSecond * screenSecondsElapsed, text.length);
+        print(layout, text.substring(0, charsToShow));
+        requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+}
+
+function initialize() {
+    const ctx = canvas.getContext('2d');
+    const font = {
+        height: 14,
+        width: 8,
+        image: new Image(),
+        coords: {},
+    };
+    font.coords[' '] = {x: 0, y: 28};
+    font.coords['.'] = {x: 104, y: 112};
+    let x, y;
+    let glyph;
+    x = 96;
+    y = 28;
+    for (glyph = '0'.charCodeAt(0); glyph <= '5'.charCodeAt(0); ++glyph) {
+        font.coords[String.fromCharCode(glyph)] = {x, y};
+        x += font.width;
+    }
+    x = 0;
+    y += font.height;
+    for (; glyph <= '9'.charCodeAt(0); ++glyph) {
+        font.coords[String.fromCharCode(glyph)] = {x, y};
+        x += font.width;
+    }
+    font.coords[':'] = {x, y};
+    x += font.width;
+    font.coords[';'] = {x, y};
+    x += font.width;
+    font.coords[','] = {x, y};
+    x += font.width;
+    font.coords['"'] = {x, y};
+    x += font.width;
+    font.coords['!'] = {x, y};
+    x += font.width;
+    font.coords['?'] = {x, y};
+    x += font.width;
+    font.coords['‽'] = {x, y};
+    x += font.width;
+    for (glyph = 'A'.charCodeAt(0); glyph <= 'G'.charCodeAt(0); ++glyph) {
+        font.coords[String.fromCharCode(glyph)] = {x, y};
+        x += font.width;
+    }
+    x = 0;
+    y += font.height;
+    for (; glyph <= 'Y'.charCodeAt(0); ++glyph) {
+        font.coords[String.fromCharCode(glyph)] = {x, y};
+        x += font.width;
+    }
+    x = 0;
+    y += font.height;
+    font.coords['Z'] = {x, y};
+    x += font.width;
+    font.coords['('] = {x, y};
+    x += font.width;
+    font.coords['/'] = {x, y};
+    x += font.width;
+    font.coords[')'] = {x, y};
+    x += font.width;
+    font.coords['\''] = {x, y};
+    x += font.width;
+    font.coords['-'] = {x, y};
+    x += font.width;
+    font.coords['ã'] = {x, y};
+    x += font.width;
+    for (glyph = 'a'.charCodeAt(0); glyph <= 'k'.charCodeAt(0); ++glyph) {
+        font.coords[String.fromCharCode(glyph)] = {x, y};
+        x += font.width;
+    }
+    x = 0;
+    y += font.height;
+    for (; glyph <= 'z'.charCodeAt(0); ++glyph) {
+        font.coords[String.fromCharCode(glyph)] = {x, y};
+        x += font.width;
+    }
+
+    font.unknown = {x: 80, y: 28};
+    console.log(font);
+
+    const state = {
+        ctx,
+        font,
+        screens: [],
+        zero: 0,
+    };
+
+    let recordedChunks;
+    const stream = canvas.captureStream(30); 
+    let mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/mp4'
+    });
+    mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+        }
+    };
+    downloadBtn.onclick = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/mp4' });
+        const videoUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = videoUrl;
+        a.download = 'reload.mp4';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(videoUrl);
+    };
+
+    yet.onclick = () => {
+        textarea.value = "They have escaped into the mansion\nWhere they thought it was safe.\nYet...";
+    }
+    horror.onclick = () => {
+        textarea.value = "You have once again entered\nthe world of survival horror.\nGood luck!";
+    }
+    evil.onclick = () => {
+        textarea.value = "We accept good things from God;\nand should we not accept evil?";
+    }
+
+    playBtn.onclick = () => {
+        state.ctx.fillRect(0, 0, canvas.width, canvas.height);
+        downloadBtn.disabled = true;
+        state.zero = document.timeline.currentTime;
+        state.screens = textarea.value.split('\n').map(breakup);
+        state.onfinished = () => {
+            mediaRecorder.stop();
+            playBtn.disabled = false;
+            downloadBtn.disabled = false;
+            state.onfinished = undefined;
+        }
+        recordedChunks = [];
+        mediaRecorder.stop();
+        mediaRecorder.start();
+    };
+    yet.click();
+
+    font.image.onload = function() {
+        playBtn.disabled = false;
+        main(state);
+    };
+    font.image.src = 'font.png';
+}
+const state = initialize(main);
+        </script>
+    </body>
+</html>
