@@ -9,9 +9,7 @@ canvas,textarea {
     </head>
     <body>
         <canvas id="canvas" width="320" height="240"></canvas>
-        <button id="yet">it was safe</button>
-        <button id="horror">survival horror</button>
-        <button id="evil">good things</button>
+        <div id="presetsContainer"></div>
         <textarea cols="40" rows="4" id="textarea"></textarea>
         <button id="playBtn" disabled>Play</button>
         <button id="downloadBtn" disabled>Download</button>
@@ -19,7 +17,7 @@ canvas,textarea {
 function breakup(s) {
     const maxLength = 20;
     const lines = [];
-    const words = s.split(' ');
+    const words = s.replace('…', '...').split(' ');
     let line = words[0];
     for (const word of words.slice(1)) {
         const appended = line + ' ' + word;
@@ -114,7 +112,7 @@ function initialize() {
     x += font.width;
     font.coords[','] = {x, y};
     x += font.width;
-    font.coords['"'] = {x, y};
+    font.coords['“'] = font.coords['”'] = font.coords['"'] = {x, y};
     x += font.width;
     font.coords['!'] = {x, y};
     x += font.width;
@@ -142,7 +140,7 @@ function initialize() {
     x += font.width;
     font.coords[')'] = {x, y};
     x += font.width;
-    font.coords["'"] = {x, y};
+    font.coords['‘'] = font.coords['’'] = font.coords["'"] = {x, y};
     x += font.width;
     font.coords['-'] = {x, y};
     x += font.width;
@@ -160,7 +158,6 @@ function initialize() {
     }
 
     font.unknown = {x: 80, y: 28};
-    console.log(font);
 
     const state = {
         ctx,
@@ -192,14 +189,19 @@ function initialize() {
         setTimeout(() => URL.revokeObjectURL(videoUrl), 5000);
     };
 
-    yet.onclick = () => {
-        textarea.value = 'They have escaped into the mansion\nWhere they thought it was safe.\nYet...';
-    }
-    horror.onclick = () => {
-        textarea.value = 'You have once again entered\nthe world of survival horror.\nGood luck!';
-    }
-    evil.onclick = () => {
-        textarea.value = 'We accept good things from God;\nand should we not accept evil?';
+    const presets = [
+        {name: 'it was safe', value: 'They have escaped into the mansion\nWhere they thought it was safe.\nYet...'},
+        {name: 'survival horror', value: 'You have once again entered\nthe world of survival horror.\nGood luck!'},
+        {name: 'good things', value: 'We accept good things from God;\nand should we not accept evil?'},
+        {name: 'fear', value: "Fear can't kill you.\nBut..."},
+    ];
+    for (const preset of presets) {
+        const btn = document.createElement('button');
+        btn.append(preset.name);
+        btn.onclick = () => {
+            textarea.value = preset.value;
+        };
+        presetsContainer.append(btn);
     }
 
     playBtn.onclick = () => {
@@ -219,7 +221,7 @@ function initialize() {
             mediaRecorder.start();
         }, 50);
     };
-    yet.click();
+    textarea.value = presets[0].value;
 
     font.image.onload = function() {
         playBtn.disabled = false;
